@@ -5,7 +5,7 @@ import { TrackService } from '../../shared/services/track.service';
 
 @Component({
   imports: [ReactiveFormsModule],
-  templateUrl: './tracks-page.html',
+  templateUrl: './tracks-page.html', 
   styleUrl: './tracks-page.css',
 })
 export class TracksPageComponent {

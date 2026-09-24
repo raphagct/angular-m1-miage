@@ -5,8 +5,12 @@
   </div>
   <nav aria-label="Navigation principale">
     <a routerLink="/tracks">Backing tracks</a>
-    <a routerLink="/profile">Profil</a>
-    <a routerLink="/login">Connexion</a>
+    @if (auth.currentUser()) {
+      <a routerLink="/profile">Profil</a>
+      <a style="cursor: pointer" (click)="logout()">Se déconnecter</a>
+    } @else {
+      <a routerLink="/login">Connexion</a>
+    }
   </nav>
 </header>
 

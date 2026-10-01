@@ -1,1 +1,38 @@
 :host { display: block; }
+
+.card-track {
+  background: #f9fbfb;
+  border: 1px solid #e1ebe7;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 0.8rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card-track:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(23, 49, 42, 0.08);
+}
+
+.track-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.track-info .meta {
+  color: #8fa39d;
+  font-size: 0.8rem;
+}
+
+.player {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: #123d32;
+  color: white;
+  border-radius: 12px;
+}
+
+.player audio {
+  margin-top: 0.5rem;
+}

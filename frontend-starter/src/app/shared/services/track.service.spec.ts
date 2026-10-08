@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { HttpEvent, HttpEventType, provideHttpClient } from '@angular/common/http';
 import { TrackService } from './track.service';
 import { Track } from '../models/track.model';
 
@@ -33,7 +33,7 @@ describe('TrackService', () => {
     const mockTitle = 'Test Track';
     const mockTrack: Track = { id: '1', title: 'Test Track', originalName: 'test.mp3', mimeType: 'audio/mp3', size: 0, createdAt: new Date().toISOString() };
     
-    let responseEvent: any;
+    let responseEvent: HttpEvent<Track> | undefined;
     
     service.upload(mockFile, mockTitle).subscribe(event => {
       responseEvent = event;
@@ -48,7 +48,8 @@ describe('TrackService', () => {
     
     req.flush(mockTrack);
     
-    expect(responseEvent.type).toBeDefined();
+    expect(responseEvent?.type).toBe(HttpEventType.Response);
+    if (responseEvent?.type === HttpEventType.Response) expect(responseEvent.body).toEqual(mockTrack);
   });
   it('should list tracks with pagination params', () => {
     const page = 2;

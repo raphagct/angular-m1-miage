@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
@@ -8,6 +9,12 @@ describe('AuthService', () => {
   let httpTesting: HttpTestingController;
 
   beforeEach(() => {
+    const storage = new Map<string, string>();
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => storage.set(key, value),
+      removeItem: (key: string) => storage.delete(key),
+    });
     TestBed.configureTestingModule({
       providers: [
         AuthService,
@@ -21,6 +28,8 @@ describe('AuthService', () => {
 
   afterEach(() => {
     httpTesting.verify();
+    service.logout();
+    vi.unstubAllGlobals();
   });
 
   it('should be created', () => {
@@ -37,6 +46,9 @@ describe('AuthService', () => {
     expect(req.request.method).toEqual('POST');
     expect(req.request.body).toEqual({ email, password });
     
-    req.flush({ token: 'fake-jwt-token' });
+    const user = { id: '1', name: 'Test', email, createdAt: '2026-01-01' };
+    req.flush({ token: 'fake-jwt-token', user });
+    expect(service.token()).toBe('fake-jwt-token');
+    expect(service.currentUser()).toEqual(user);
   });
 });

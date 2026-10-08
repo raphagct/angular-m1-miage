@@ -36,3 +36,25 @@
 .player audio {
   margin-top: 0.5rem;
 }
+
+.hero { margin-bottom: 2rem; }
+.hero h1 { margin-bottom: 0.3rem; }
+.hero p:last-child { color: #506c61; }
+.eyebrow { margin-bottom: 0.35rem; color: #167a5d; font-size: 0.8rem; font-weight: 750; letter-spacing: 0.12em; }
+.grid { display: grid; grid-template-columns: minmax(260px, 350px) minmax(0, 1fr); align-items: start; gap: 1.5rem; }
+.grid > .card { min-width: 0; }
+.grid > .card:first-child { display: grid; gap: 1rem; }
+.grid > .card:first-child h2 { margin-bottom: 0; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; }
+.row h2 { margin-bottom: 0; }
+.track { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.track-info { min-width: 0; overflow-wrap: anywhere; }
+.track-info .meta { color: #526f63; }
+.player audio { display: block; width: 100%; }
+
+@media (max-width: 760px) {
+  .grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 420px) {
+  .track { align-items: flex-start; flex-direction: column; }
+}

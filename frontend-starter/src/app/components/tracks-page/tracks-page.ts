@@ -2,13 +2,13 @@ import { Component, inject, signal, DestroyRef } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { HttpEventType, HttpErrorResponse } from '@angular/common/http';
 import { Track } from '../../shared/models/track.model';
 import { TrackService } from '../../shared/services/track.service';
 
 @Component({
-  imports: [ReactiveFormsModule, MatPaginatorModule, DatePipe, DecimalPipe],
+  imports: [ReactiveFormsModule, MatPaginatorModule, MatSnackBarModule, DatePipe, DecimalPipe],
   templateUrl: './tracks-page.html', 
   styleUrl: './tracks-page.css',
 })
@@ -46,6 +46,8 @@ export class TracksPageComponent {
   }
 
   choose(event: Event): void {
+    if (this.uploading()) return;
+    this.uploadProgress.set(0);
     this.uploadError.set(null);
     this.uploadSuccess.set(null);
     this.file = (event.target as HTMLInputElement).files?.[0];
@@ -73,12 +75,18 @@ export class TracksPageComponent {
     this.service.list(this.page(), this.limit()).subscribe({
       next: (response) => {
         console.debug('[TracksPage] Pistes chargées', response.items.length);
+        const lastPage = Math.max(1, Math.ceil(response.total / this.limit()));
+        if (this.page() > lastPage) {
+          this.page.set(lastPage);
+          this.load();
+          return;
+        }
         this.tracks.set(response.items);
         this.total.set(response.total);
         this.loading.set(false);
       },
       error: (error) => {
-        console.error('[TracksPage] Chargement impossible', error);
+        console.error('[TracksPage] Chargement impossible');
         this.error.set('Impossible de charger les pistes.');
         this.loading.set(false);
       },
@@ -97,9 +105,10 @@ export class TracksPageComponent {
   }
 
   upload(): void {
-    if (!this.file) return;
+    if (!this.file || this.uploading()) return;
 
     this.uploading.set(true);
+    this.title.disable();
     this.uploadError.set(null);
     this.uploadSuccess.set(null);
 
@@ -119,14 +128,16 @@ export class TracksPageComponent {
           this.file = undefined;
           this.ghostFile.set(null);
           this.uploading.set(false);
+          this.title.enable();
           this.page.set(1);
           this.load();
         }
       },
       error: (error) => {
-        console.error('[TracksPage] Envoi impossible', error);
+        console.error('[TracksPage] Envoi impossible');
         this.uploadError.set('Erreur serveur lors de l\'envoi.');
         this.uploading.set(false);
+        this.title.enable();
         this.ghostFile.set(null);
       },
     });
@@ -144,13 +155,14 @@ export class TracksPageComponent {
         this.audioUrl.set(URL.createObjectURL(blob));
       },
       error: (error) => {
-        console.error('[TracksPage] Lecture impossible', error);
+        console.error('[TracksPage] Lecture impossible');
         this.playError.set('Impossible de lire la piste.');
       }
     });
   }
 
   delete(track: Track): void {
+    if (this.deleting().has(track.id)) return;
     if (!confirm(`Voulez-vous vraiment supprimer la piste "${track.title}" ?`)) {
       return;
     }
@@ -169,10 +181,10 @@ export class TracksPageComponent {
         this.load();
       },
       error: (err: HttpErrorResponse) => {
-        console.error('[TracksPage] Suppression impossible', err);
+        console.error('[TracksPage] Suppression impossible', err.status);
         let errorMessage = 'Impossible de supprimer la piste.';
         if (err.status === 404) {
-          errorMessage = 'La piste n\'existe plus.';
+          errorMessage = 'La piste n’existe plus ou ne vous appartient pas.';
         } else if (err.status === 403 || err.status === 401) {
           errorMessage = 'Vous n\'êtes pas autorisé à supprimer cette piste.';
         }
@@ -181,7 +193,7 @@ export class TracksPageComponent {
         const updatedDeleting = new Set(this.deleting());
         updatedDeleting.delete(track.id);
         this.deleting.set(updatedDeleting);
-        this.load(); // Refresh the list in case it was already deleted
+        this.load(); // Le backend renvoie aussi 404 si le propriétaire ne correspond pas.
       }
     });
   }

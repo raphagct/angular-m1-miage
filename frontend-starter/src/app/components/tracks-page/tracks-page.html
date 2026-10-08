@@ -8,7 +8,7 @@
   <div class="grid">
     <article class="card">
       <h2>Importer</h2>
-      <label>Titre<input [formControl]="title" [disabled]="uploading()" /></label>
+      <label>Titre<input [formControl]="title" /></label>
       <label>Fichier audio<input type="file" accept="audio/*" (change)="choose($event)" [disabled]="uploading()" /></label>
       
       @if (uploadError()) {
@@ -61,9 +61,9 @@
             <button type="button" (click)="play(track)" [attr.aria-label]="'Lire ' + track.title">▶</button>
             <button type="button" (click)="delete(track)" [disabled]="deleting().has(track.id)" [attr.aria-label]="'Supprimer ' + track.title" style="background-color: #d32f2f; color: white;">
               @if (deleting().has(track.id)) {
-                ...
+                Suppression…
               } @else {
-                🗑
+                Supprimer
               }
             </button>
           </div>

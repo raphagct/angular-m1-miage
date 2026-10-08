@@ -1,1 +1,87 @@
-:host { display: block; max-width: 700px; margin: 0 auto; }
+:host { display: block; }
+
+/* Hero */
+.hero { margin-bottom: 2.5rem; }
+.hero h1 { margin-bottom: 0.3rem; color: #fff; }
+.hero-sub { color: var(--muted-foreground); font-size: 1rem; }
+.eyebrow {
+  margin-bottom: 0.35rem;
+  color: oklch(0.75 0.2 145);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.profile-content {
+  max-width: 500px;
+}
+
+.card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.title-icon {
+  font-size: 1.1rem;
+  color: oklch(0.75 0.2 145);
+}
+
+.profile-form {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.field-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+
+.mash-input {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--secondary);
+  color: var(--foreground);
+  font: inherit;
+  font-size: 0.9rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.mash-input:focus {
+  outline: none;
+  border-color: oklch(0.75 0.2 145);
+  box-shadow: 0 0 0 3px oklch(0.75 0.2 145 / 12%);
+}
+
+.mash-input.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.field-error {
+  font-size: 0.8rem;
+  color: oklch(0.65 0.2 25);
+}
+
+.skeleton-form {
+  height: 60px;
+  border-radius: 10px;
+  background: linear-gradient(
+    90deg,
+    var(--secondary) 25%,
+    oklch(0.2 0 0) 50%,
+    var(--secondary) 75%
+  );
+  background-size: 400% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}

@@ -1,94 +1,194 @@
-<section>
+<section class="animate-fade-in-up">
   <div class="hero">
-    <p class="eyebrow">MA BIBLIOTHÈQUE</p>
-    <h1>Backing tracks</h1>
-    <p>Importez, retrouvez et écoutez vos morceaux de travail.</p>
+    <p class="eyebrow">MY LIBRARY</p>
+    <h1>Sound Library</h1>
+    <p class="hero-sub">Import, organize and listen to your tracks.</p>
   </div>
 
   <div class="grid">
-    <article class="card">
-      <h2>Importer</h2>
-      <label>Titre<input [formControl]="title" /></label>
-      <label>Fichier audio<input type="file" accept="audio/*" (change)="choose($event)" [disabled]="uploading()" /></label>
-      
-      @if (uploadError()) {
-        <p class="error">{{ uploadError() }}</p>
-      }
-      @if (uploadSuccess()) {
-        <p style="color: green;">{{ uploadSuccess() }}</p>
-      }
+    <!-- ═══ Upload Panel ═══ -->
+    <z-card class="upload-card">
+      <z-card-header>
+        <z-card-title>
+          <div class="card-title-row">
+            <ng-icon name="lucideUpload" class="title-icon" />
+            <span>Upload</span>
+          </div>
+        </z-card-title>
+        <z-card-description>Import an audio file (25 Mo max)</z-card-description>
+      </z-card-header>
 
-      <button type="button" (click)="upload()" [disabled]="!file || uploading()">
+      <z-card-content class="upload-content">
+        <label class="input-label">Title</label>
+        <input class="mash-input" [formControl]="title" placeholder="Track name..." />
+
+        <div
+          class="dropzone"
+          [class.dragging]="isDragging()"
+          (dragover)="onDragOver($event)"
+          (dragleave)="onDragLeave($event)"
+          (drop)="onDrop($event)"
+        >
+          <ng-icon name="lucideUpload" class="dropzone-icon" />
+          @if (file) {
+            <p class="dropzone-text">{{ file.name }}</p>
+            <p class="dropzone-hint">{{ (file.size / 1024 / 1024).toFixed(1) }} Mo</p>
+          } @else {
+            <p class="dropzone-text">Drag & drop your file</p>
+            <p class="dropzone-hint">or click to browse</p>
+          }
+          <input
+            type="file"
+            accept="audio/*"
+            class="dropzone-input"
+            (change)="choose($event)"
+            [disabled]="uploading()"
+          />
+        </div>
+
         @if (uploading()) {
-          Envoi en cours...
-        } @else {
-          Envoyer
+          <div class="upload-progress">
+            <z-progress [value]="uploadProgress()" class="progress-bar" />
+            <span class="progress-text">{{ uploadProgress() }}%</span>
+          </div>
         }
-      </button>
-    </article>
 
-    <article class="card">
-      <div class="row">
-        <h2>Mes pistes</h2>
-        <button type="button" (click)="load()">Actualiser</button>
+        @if (uploadError()) {
+          <z-badge zType="destructive" class="msg-badge">{{ uploadError() }}</z-badge>
+        }
+        @if (uploadSuccess()) {
+          <z-badge zType="outline" class="msg-badge success">{{ uploadSuccess() }}</z-badge>
+        }
+      </z-card-content>
+
+      <z-card-footer>
+        <button z-button (click)="upload()" [disabled]="!file || uploading()" [zLoading]="uploading()">
+          @if (uploading()) {
+            Uploading...
+          } @else {
+            <ng-icon name="lucideUpload" />
+            Upload
+          }
+        </button>
+      </z-card-footer>
+    </z-card>
+
+    <!-- ═══ Library Panel ═══ -->
+    <div class="library-panel">
+      <div class="library-header">
+        <h2 class="library-title">
+          <ng-icon name="lucideMusic" class="title-icon" />
+          My Tracks
+        </h2>
+        <button z-button zType="ghost" zSize="sm" (click)="load()" aria-label="Refresh">
+          <ng-icon name="lucideRefreshCw" />
+        </button>
       </div>
+
       @if (loading()) {
-        <p>Chargement…</p>
+        <div class="skeleton-list">
+          @for (i of [1,2,3]; track i) {
+            <div class="skeleton-card"></div>
+          }
+        </div>
       }
+
       @if (error()) {
-        <p class="error" style="color: red;">{{ error() }}</p>
+        <div class="error-box">{{ error() }}</div>
       }
 
       @if (ghostFile()) {
-        <div class="track card-track" style="opacity: 0.6; border: 1px dashed #ccc;">
+        <div class="track-card ghost-card">
           <div class="track-info">
-            <b>{{ title.value || ghostFile()?.name }}</b>
-            <small>{{ ghostFile()?.name }}</small>
-            <small class="meta">Envoi en cours... ({{ uploadProgress() }}%)</small>
-            <progress [value]="uploadProgress()" max="100" style="width: 100%; margin-top: 4px;"></progress>
+            <span class="track-title">{{ title.value || ghostFile()?.name }}</span>
+            <span class="track-filename">{{ ghostFile()?.name }}</span>
+            <div class="upload-progress inline">
+              <z-progress [value]="uploadProgress()" class="progress-bar" />
+              <span class="progress-text">{{ uploadProgress() }}%</span>
+            </div>
           </div>
         </div>
       }
 
       @for (track of tracks(); track track.id) {
-        <div class="track card-track">
+        <div class="track-card" [class.playing]="currentTrack()?.id === track.id">
           <div class="track-info">
-            <b>{{ track.title }}</b>
-            <small>{{ track.originalName }}</small>
-            <small class="meta">{{ track.mimeType }} · {{ track.size / 1024 | number:'1.0-0' }} Ko · Ajouté le {{ track.createdAt | date:'shortDate' }}</small>
+            <span class="track-title">{{ track.title }}</span>
+            <span class="track-filename">
+              <ng-icon name="lucideFile" class="file-icon" />
+              {{ track.originalName }}
+            </span>
+            <div class="track-meta">
+              <z-badge zType="secondary" class="meta-badge">{{ track.mimeType }}</z-badge>
+              <span>{{ track.size / 1024 | number:'1.0-0' }} Ko</span>
+              <span>·</span>
+              <span>{{ track.createdAt | date:'shortDate' }}</span>
+            </div>
           </div>
-          <div style="display: flex; gap: 8px;">
-            <button type="button" (click)="play(track)" [attr.aria-label]="'Lire ' + track.title">▶</button>
-            <button type="button" (click)="delete(track)" [disabled]="deleting().has(track.id)" [attr.aria-label]="'Supprimer ' + track.title" style="background-color: #d32f2f; color: white;">
+          <div class="track-actions">
+            <button z-button zType="default" zSize="sm" zShape="circle" (click)="play(track)" [attr.aria-label]="'Play ' + track.title">
+              <ng-icon [name]="currentTrack()?.id === track.id ? 'lucidePause' : 'lucidePlay'" />
+            </button>
+            <button z-button zType="ghost" zSize="sm" zShape="circle" (click)="confirmDelete(track)" [disabled]="deleting().has(track.id)" [attr.aria-label]="'Delete ' + track.title" class="delete-btn">
               @if (deleting().has(track.id)) {
-                Suppression…
+                <ng-icon name="lucideRefreshCw" class="animate-spin" />
               } @else {
-                Supprimer
+                <ng-icon name="lucideTrash2" />
               }
             </button>
           </div>
         </div>
       } @empty {
-        <p>Aucune piste.</p>
+        @if (!loading()) {
+          <div class="empty-state">
+            <ng-icon name="lucideMusic" class="empty-icon" />
+            <p>No tracks yet</p>
+            <p class="empty-hint">Upload your first track to get started.</p>
+          </div>
+        }
       }
-      <mat-paginator
-        [length]="total()"
-        [pageSize]="limit()"
-        [pageSizeOptions]="[5, 10, 20]"
-        [pageIndex]="page() - 1"
-        (page)="onPageChange($event)">
-      </mat-paginator>
+
+      <!-- Pagination -->
+      @if (total() > limit()) {
+        <div class="pagination">
+          <button z-button zType="ghost" zSize="sm" (click)="go(page() - 1)" [disabled]="page() <= 1">
+            <ng-icon name="lucideChevronLeft" />
+          </button>
+          <span class="page-info">{{ page() }} / {{ totalPages }}</span>
+          <button z-button zType="ghost" zSize="sm" (click)="go(page() + 1)" [disabled]="page() >= totalPages">
+            <ng-icon name="lucideChevronRight" />
+          </button>
+        </div>
+      }
 
       @if (playError()) {
-        <p class="error">{{ playError() }}</p>
+        <div class="error-box">{{ playError() }}</div>
       }
-      
+
+      <!-- Audio Player -->
       @if (audioUrl()) {
         <div class="player">
-          <p>En cours de lecture : <b>{{ currentTrack()?.title }}</b></p>
+          <div class="player-info">
+            <ng-icon name="lucideMusic" class="player-icon" />
+            <span>Now playing: <strong>{{ currentTrack()?.title }}</strong></span>
+          </div>
           <audio [src]="audioUrl()" controls autoplay></audio>
         </div>
       }
-    </article>
+    </div>
   </div>
 </section>
+
+<!-- Delete Confirmation Dialog -->
+<z-dialog [(zVisible)]="deleteDialogVisible">
+  <z-dialog-header>
+    <z-dialog-title>Delete Track</z-dialog-title>
+    <z-dialog-description>
+      Are you sure you want to delete "{{ trackToDelete()?.title }}"? This action cannot be undone.
+    </z-dialog-description>
+  </z-dialog-header>
+  <z-dialog-footer>
+    <button z-button zType="ghost" z-dialog-close>Cancel</button>
+    <button z-button zType="destructive" (click)="executeDelete()">Delete</button>
+  </z-dialog-footer>
+</z-dialog>

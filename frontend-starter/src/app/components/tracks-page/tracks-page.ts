@@ -1,21 +1,61 @@
 import { Component, inject, signal, DestroyRef } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { HttpEventType, HttpErrorResponse } from '@angular/common/http';
 import { Track } from '../../shared/models/track.model';
 import { TrackService } from '../../shared/services/track.service';
+import { ZardButtonComponent } from '@/shared/components/button';
+import { ZardCardImports } from '@/shared/components/card/card.imports';
+import { ZardProgressComponent } from '@/shared/components/progress';
+import { ZardBadgeComponent } from '@/shared/components/badge';
+import { ZardSeparatorComponent } from '@/shared/components/separator';
+import { ZardDialogImports } from '@/shared/components/dialog/dialog.imports';
+import { ZardSonnerService } from '@/shared/components/sonner';
+import { NgIcon, provideIcons } from '@ng-icons/core';
+import {
+  lucideUpload,
+  lucidePlay,
+  lucideTrash2,
+  lucideRefreshCw,
+  lucideMusic,
+  lucideChevronLeft,
+  lucideChevronRight,
+  lucideFile,
+  lucidePause,
+} from '@ng-icons/lucide';
 
 @Component({
-  imports: [ReactiveFormsModule, MatPaginatorModule, MatSnackBarModule, DatePipe, DecimalPipe],
-  templateUrl: './tracks-page.html', 
+  imports: [
+    ReactiveFormsModule,
+    DatePipe,
+    DecimalPipe,
+    ZardButtonComponent,
+    ...ZardCardImports,
+    ZardProgressComponent,
+    ZardBadgeComponent,
+    ...ZardDialogImports,
+    NgIcon,
+  ],
+  templateUrl: './tracks-page.html',
   styleUrl: './tracks-page.css',
+  viewProviders: [
+    provideIcons({
+      lucideUpload,
+      lucidePlay,
+      lucideTrash2,
+      lucideRefreshCw,
+      lucideMusic,
+      lucideChevronLeft,
+      lucideChevronRight,
+      lucideFile,
+      lucidePause,
+    }),
+  ],
 })
 export class TracksPageComponent {
   private readonly service = inject(TrackService);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly snackBar = inject(MatSnackBar);
+  private readonly sonner = inject(ZardSonnerService);
 
   readonly tracks = signal<Track[]>([]);
   readonly page = signal(1);
@@ -25,16 +65,23 @@ export class TracksPageComponent {
   readonly error = signal<string | null>(null);
   readonly audioUrl = signal('');
   readonly title = new FormControl('', { nonNullable: true });
-  
+
   readonly uploadError = signal<string | null>(null);
   readonly uploadSuccess = signal<string | null>(null);
   readonly uploading = signal(false);
   readonly uploadProgress = signal(0);
   readonly ghostFile = signal<File | null>(null);
-  
+
   readonly currentTrack = signal<Track | null>(null);
   readonly playError = signal<string | null>(null);
   readonly deleting = signal<Set<string>>(new Set());
+
+  /** Delete confirmation dialog state */
+  readonly deleteDialogVisible = signal(false);
+  readonly trackToDelete = signal<Track | null>(null);
+
+  /** Drag-and-drop state */
+  readonly isDragging = signal(false);
 
   file?: File;
 
@@ -51,7 +98,7 @@ export class TracksPageComponent {
     this.uploadError.set(null);
     this.uploadSuccess.set(null);
     this.file = (event.target as HTMLInputElement).files?.[0];
-    
+
     if (!this.file) return;
 
     if (!this.file.type.startsWith('audio/')) {
@@ -67,6 +114,46 @@ export class TracksPageComponent {
     }
 
     console.debug('[TracksPage] Fichier valide', this.file.name);
+  }
+
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging.set(true);
+  }
+
+  onDragLeave(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging.set(false);
+  }
+
+  onDrop(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging.set(false);
+
+    if (this.uploading()) return;
+
+    const droppedFile = event.dataTransfer?.files[0];
+    if (!droppedFile) return;
+
+    this.uploadProgress.set(0);
+    this.uploadError.set(null);
+    this.uploadSuccess.set(null);
+
+    if (!droppedFile.type.startsWith('audio/')) {
+      this.uploadError.set('Le fichier doit être un format audio.');
+      return;
+    }
+
+    if (droppedFile.size > 25 * 1024 * 1024) {
+      this.uploadError.set('Le fichier ne doit pas dépasser 25 Mo.');
+      return;
+    }
+
+    this.file = droppedFile;
+    console.debug('[TracksPage] Fichier droppé', this.file.name);
   }
 
   load(): void {
@@ -93,14 +180,13 @@ export class TracksPageComponent {
     });
   }
 
-  go(page: number): void {
-    this.page.set(page);
-    this.load();
+  get totalPages(): number {
+    return Math.max(1, Math.ceil(this.total() / this.limit()));
   }
 
-  onPageChange(event: PageEvent): void {
-    this.page.set(event.pageIndex + 1);
-    this.limit.set(event.pageSize);
+  go(page: number): void {
+    if (page < 1 || page > this.totalPages) return;
+    this.page.set(page);
     this.load();
   }
 
@@ -123,7 +209,7 @@ export class TracksPageComponent {
           }
         } else if (event.type === HttpEventType.Response) {
           console.debug('[TracksPage] Piste envoyée', event.body?.id);
-          this.uploadSuccess.set('Piste envoyée avec succès !');
+          this.sonner.success('Piste envoyée avec succès !');
           this.title.setValue('');
           this.file = undefined;
           this.ghostFile.set(null);
@@ -135,7 +221,7 @@ export class TracksPageComponent {
       },
       error: (error) => {
         console.error('[TracksPage] Envoi impossible');
-        this.uploadError.set('Erreur serveur lors de l\'envoi.');
+        this.sonner.error('Erreur serveur lors de l\'envoi.');
         this.uploading.set(false);
         this.title.enable();
         this.ghostFile.set(null);
@@ -161,12 +247,21 @@ export class TracksPageComponent {
     });
   }
 
-  delete(track: Track): void {
+  /** Open delete confirmation dialog */
+  confirmDelete(track: Track): void {
+    this.trackToDelete.set(track);
+    this.deleteDialogVisible.set(true);
+  }
+
+  /** Execute deletion after confirmation */
+  executeDelete(): void {
+    const track = this.trackToDelete();
+    if (!track) return;
+
+    this.deleteDialogVisible.set(false);
+
     if (this.deleting().has(track.id)) return;
-    if (!confirm(`Voulez-vous vraiment supprimer la piste "${track.title}" ?`)) {
-      return;
-    }
-    
+
     const currentDeleting = new Set(this.deleting());
     currentDeleting.add(track.id);
     this.deleting.set(currentDeleting);
@@ -174,7 +269,7 @@ export class TracksPageComponent {
     this.service.delete(track.id).subscribe({
       next: () => {
         console.debug('[TracksPage] Piste supprimée', track.id);
-        this.snackBar.open('Piste supprimée avec succès', 'Fermer', { duration: 3000 });
+        this.sonner.success('Piste supprimée avec succès');
         const updatedDeleting = new Set(this.deleting());
         updatedDeleting.delete(track.id);
         this.deleting.set(updatedDeleting);
@@ -184,12 +279,12 @@ export class TracksPageComponent {
         console.error('[TracksPage] Suppression impossible', err.status);
         let errorMessage = 'Impossible de supprimer la piste.';
         if (err.status === 404) {
-          errorMessage = 'La piste n’existe plus ou ne vous appartient pas.';
+          errorMessage = "La piste n'existe plus ou ne vous appartient pas.";
         } else if (err.status === 403 || err.status === 401) {
           errorMessage = 'Vous n\'êtes pas autorisé à supprimer cette piste.';
         }
-        this.snackBar.open(errorMessage, 'Fermer', { duration: 3000 });
-        
+        this.sonner.error(errorMessage);
+
         const updatedDeleting = new Set(this.deleting());
         updatedDeleting.delete(track.id);
         this.deleting.set(updatedDeleting);

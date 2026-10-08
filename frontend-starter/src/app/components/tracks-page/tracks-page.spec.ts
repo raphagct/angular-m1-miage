@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpEventType, provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { ZardSonnerService } from '@/shared/components/sonner';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { TracksPageComponent } from './tracks-page';
 
@@ -9,17 +9,18 @@ import { TracksPageComponent } from './tracks-page';
 describe('TracksPageComponent', () => {
   let component: TracksPageComponent;
   let http: HttpTestingController;
-  const snackBar = { open: vi.fn() };
+  const sonner = { success: vi.fn(), error: vi.fn() };
   const track = { id: '1', title: 'Test', originalName: 'test.mp3', mimeType: 'audio/mpeg', size: 100, createdAt: '2026-01-01' };
   const page = { items: [track], total: 1, page: 1, limit: 5, pages: 1 };
 
   beforeEach(() => {
-    snackBar.open.mockClear();
+    sonner.success.mockClear();
+    sonner.error.mockClear();
     TestBed.configureTestingModule({
       imports: [TracksPageComponent],
-      providers: [provideHttpClient(withXhr()), provideHttpClientTesting(), { provide: MatSnackBar, useValue: snackBar }],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting(), { provide: ZardSonnerService, useValue: sonner }],
     });
-    TestBed.overrideProvider(MatSnackBar, { useValue: snackBar });
+    TestBed.overrideProvider(ZardSonnerService, { useValue: sonner });
     component = TestBed.createComponent(TracksPageComponent).componentInstance;
     http = TestBed.inject(HttpTestingController);
     http.expectOne('/api/tracks?page=1&limit=5').flush(page);
@@ -28,9 +29,10 @@ describe('TracksPageComponent', () => {
   afterEach(() => { http.verify(); vi.restoreAllMocks(); });
 
   it('supprime après confirmation, bloque un double appel et recharge la liste', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
-    component.delete(track);
-    component.delete(track);
+    // La confirmation est maintenant gérée par le dialog, on simule l'action :
+    component.confirmDelete(track);
+    component.executeDelete();
+    component.executeDelete();
     const req = http.expectOne('/api/tracks/1');
     expect(req.request.method).toBe('DELETE');
     expect(component.deleting().has('1')).toBe(true);
@@ -38,7 +40,7 @@ describe('TracksPageComponent', () => {
     http.expectOne('/api/tracks?page=1&limit=5').flush({ ...page, items: [], total: 0 });
     expect(component.tracks()).toEqual([]);
     expect(component.deleting().size).toBe(0);
-    expect(snackBar.open).toHaveBeenCalledWith('Piste supprimée avec succès', 'Fermer', { duration: 3000 });
+    expect(sonner.success).toHaveBeenCalledWith('Piste supprimée avec succès');
   });
 
   it('revient à la dernière page disponible lorsque la page courante devient vide', () => {
@@ -51,19 +53,20 @@ describe('TracksPageComponent', () => {
   });
 
   it('ne supprime pas si la confirmation est annulée', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
-    component.delete(track);
+    // Si on ouvre le dialogue mais qu'on annule (ici on ne fait pas executeDelete)
+    component.confirmDelete(track);
+    // component.executeDelete(); n'est pas appelé
     http.expectNone('/api/tracks/1');
     expect(component.deleting().size).toBe(0);
   });
 
   it.each([404, 403, 401])('affiche un SnackBar et libère la suppression après une erreur %s', status => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
-    component.delete(track);
+    component.confirmDelete(track);
+    component.executeDelete();
     http.expectOne('/api/tracks/1').flush({}, { status, statusText: 'Erreur' });
     http.expectOne('/api/tracks?page=1&limit=5').flush(page);
     expect(component.deleting().size).toBe(0);
-    expect(snackBar.open).toHaveBeenCalledWith(status === 404 ? 'La piste n’existe plus ou ne vous appartient pas.' : 'Vous n\'êtes pas autorisé à supprimer cette piste.', 'Fermer', { duration: 3000 });
+    expect(sonner.error).toHaveBeenCalledWith(status === 404 ? "La piste n'existe plus ou ne vous appartient pas." : "Vous n'êtes pas autorisé à supprimer cette piste.");
   });
 
   it('affiche la progression intermédiaire et attend la réponse pour annoncer la réussite', () => {
@@ -85,7 +88,7 @@ describe('TracksPageComponent', () => {
     http.expectOne('/api/tracks?page=1&limit=5').flush(page);
     expect(component.uploading()).toBe(false);
     expect(component.title.enabled).toBe(true);
-    expect(component.uploadSuccess()).toBe('Piste envoyée avec succès !');
+    expect(sonner.success).toHaveBeenCalledWith('Piste envoyée avec succès !');
     expect(component.file).toBeUndefined();
     expect(component.ghostFile()).toBeNull();
   });
@@ -94,7 +97,7 @@ describe('TracksPageComponent', () => {
     component.file = new File(['audio'], 'test.mp3', { type: 'audio/mpeg' });
     component.upload();
     http.expectOne('/api/tracks').flush({}, { status: 500, statusText: 'Server Error' });
-    expect(component.uploadError()).toBe("Erreur serveur lors de l'envoi.");
+    expect(sonner.error).toHaveBeenCalledWith("Erreur serveur lors de l'envoi.");
     expect(component.uploading()).toBe(false);
     expect(component.title.enabled).toBe(true);
     expect(component.file).toBeDefined();

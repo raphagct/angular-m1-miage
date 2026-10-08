@@ -1,20 +1,52 @@
-<section class="card">
-  <h1>Connexion</h1>
-  <form [formGroup]="form" (ngSubmit)="submit()">
-    <label>Email<input type="email" formControlName="email" /></label>
-    @if (form.controls.email.invalid && form.controls.email.touched) {
-      <span class="error">Un email valide est requis.</span>
+<section class="auth-page">
+  <div class="auth-card animate-fade-in-up">
+    <div class="auth-brand">
+      <span class="auth-logo">mash</span>
+    </div>
+
+    <h1 class="auth-title">Sign in</h1>
+    <p class="auth-subtitle">Welcome back. Enter your credentials.</p>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" class="auth-form">
+      <div class="field">
+        <label class="field-label" for="login-email">Email</label>
+        <input
+          id="login-email"
+          class="mash-input"
+          type="email"
+          formControlName="email"
+          placeholder="you@example.com"
+        />
+        @if (form.controls.email.invalid && form.controls.email.touched) {
+          <span class="field-error">A valid email is required.</span>
+        }
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="login-password">Password</label>
+        <input
+          id="login-password"
+          class="mash-input"
+          type="password"
+          formControlName="password"
+          placeholder="••••••••"
+        />
+        @if (form.controls.password.invalid && form.controls.password.touched) {
+          <span class="field-error">Password is required.</span>
+        }
+      </div>
+
+      <button z-button type="submit" [disabled]="form.invalid || loading()" [zLoading]="loading()" class="auth-submit">
+        Sign in
+      </button>
+    </form>
+
+    @if (error()) {
+      <p class="auth-error">{{ error() }}</p>
     }
-    
-    <label>Mot de passe<input type="password" formControlName="password" /></label>
-    @if (form.controls.password.invalid && form.controls.password.touched) {
-      <span class="error">Le mot de passe est requis.</span>
-    }
-    
-    <button type="submit" [disabled]="form.invalid">Se connecter</button>
-  </form>
-  @if (error()) {
-    <p class="error">{{ error() }}</p>
-  }
-  <p><a routerLink="/register">Créer un compte</a></p>
+
+    <p class="auth-link">
+      Don't have an account? <a routerLink="/register">Create one</a>
+    </p>
+  </div>
 </section>

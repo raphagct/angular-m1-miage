@@ -1,15 +1,21 @@
 <header>
-  <div>
-    <b>Guitar Practice Cloud</b>
-    <small>Le cloud qui manque à votre ampli</small>
-  </div>
+  <a routerLink="/tracks" class="logo">mash</a>
   <nav aria-label="Navigation principale">
-    <a routerLink="/tracks">Backing tracks</a>
     @if (auth.currentUser()) {
-      <a routerLink="/profile">Profil</a>
-      <a style="cursor: pointer" (click)="logout()">Se déconnecter</a>
+      <a routerLink="/tracks" routerLinkActive="active" class="nav-link">
+        <ng-icon name="lucideMusic" class="nav-icon" />
+        <span>Library</span>
+      </a>
+      <a routerLink="/profile" routerLinkActive="active" class="nav-link">
+        <ng-icon name="lucideUser" class="nav-icon" />
+        <span>Profile</span>
+      </a>
+      <button type="button" class="nav-link logout-btn" (click)="logout()">
+        <ng-icon name="lucideLogOut" class="nav-icon" />
+        <span>Logout</span>
+      </button>
     } @else {
-      <a routerLink="/login">Connexion</a>
+      <a routerLink="/login" routerLinkActive="active" class="nav-link">Connexion</a>
     }
   </nav>
 </header>
@@ -17,3 +23,5 @@
 <main>
   <router-outlet />
 </main>
+
+<z-sonner theme="dark" position="bottom-right" [richColors]="true" />

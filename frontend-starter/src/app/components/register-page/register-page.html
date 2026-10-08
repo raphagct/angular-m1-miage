@@ -1,25 +1,66 @@
-<section class="card">
-  <h1>Créer un compte</h1>
-  <form [formGroup]="form" (ngSubmit)="submit()">
-    <label>Nom<input formControlName="name" /></label>
-    @if (form.controls.name.invalid && form.controls.name.touched) {
-      <span class="error">Le nom est requis.</span>
+<section class="auth-page">
+  <div class="auth-card animate-fade-in-up">
+    <div class="auth-brand">
+      <span class="auth-logo">mash</span>
+    </div>
+
+    <h1 class="auth-title">Create an account</h1>
+    <p class="auth-subtitle">Join us and start uploading tracks.</p>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" class="auth-form">
+      <div class="field">
+        <label class="field-label" for="reg-name">Name</label>
+        <input
+          id="reg-name"
+          class="mash-input"
+          type="text"
+          formControlName="name"
+          placeholder="Jane Doe"
+        />
+        @if (form.controls.name.invalid && form.controls.name.touched) {
+          <span class="field-error">Name is required.</span>
+        }
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="reg-email">Email</label>
+        <input
+          id="reg-email"
+          class="mash-input"
+          type="email"
+          formControlName="email"
+          placeholder="you@example.com"
+        />
+        @if (form.controls.email.invalid && form.controls.email.touched) {
+          <span class="field-error">A valid email is required.</span>
+        }
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="reg-password">Password</label>
+        <input
+          id="reg-password"
+          class="mash-input"
+          type="password"
+          formControlName="password"
+          placeholder="••••••••"
+        />
+        @if (form.controls.password.invalid && form.controls.password.touched) {
+          <span class="field-error">Password is required.</span>
+        }
+      </div>
+
+      <button z-button type="submit" [disabled]="form.invalid || loading()" [zLoading]="loading()" class="auth-submit">
+        Create account
+      </button>
+    </form>
+
+    @if (error()) {
+      <p class="auth-error">{{ error() }}</p>
     }
-    
-    <label>Email<input type="email" formControlName="email" /></label>
-    @if (form.controls.email.invalid && form.controls.email.touched) {
-      <span class="error">Un email valide est requis.</span>
-    }
-    
-    <label>Mot de passe<input type="password" formControlName="password" /></label>
-    @if (form.controls.password.invalid && form.controls.password.touched) {
-      <span class="error">Le mot de passe est requis.</span>
-    }
-    
-    <button type="submit" [disabled]="form.invalid">Créer mon compte</button>
-  </form>
-  @if (error()) {
-    <p class="error">{{ error() }}</p>
-  }
-  <p><a routerLink="/login">Déjà inscrit ?</a></p>
+
+    <p class="auth-link">
+      Already have an account? <a routerLink="/login">Sign in</a>
+    </p>
+  </div>
 </section>

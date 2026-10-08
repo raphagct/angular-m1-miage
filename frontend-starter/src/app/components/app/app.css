@@ -1,22 +1,102 @@
 :host { display: block; min-height: 100vh; }
 
 header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1.5rem;
-  padding: 1rem max(1.5rem, calc((100vw - 1180px) / 2));
-  background: #123d32;
-  color: #fff;
+  padding: 0 max(1.5rem, calc((100vw - 1200px) / 2));
+  height: 60px;
+  background: oklch(0.05 0 0 / 85%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid oklch(1 0 0 / 22%);
 }
-header > div { display: grid; }
-header b { font-size: 1.15rem; }
-header small { color: #c9e1d8; }
-nav { display: flex; align-items: center; flex-wrap: wrap; gap: 1.25rem; }
-nav a { color: #fff; font-weight: 600; }
-main { max-width: 1180px; margin: 0 auto; padding: 2.5rem 1.5rem; }
+
+.logo {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: #fff;
+  text-decoration: none;
+}
+
+.logo:hover {
+  text-decoration: none;
+  opacity: 0.9;
+}
+
+nav {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  color: oklch(0.65 0 0);
+  font-weight: 500;
+  font-size: 0.875rem;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.nav-link:hover {
+  color: #fff;
+  background: oklch(1 0 0 / 6%);
+  text-decoration: none;
+}
+
+.nav-link.active {
+  color: oklch(0.75 0.2 145);
+  background: oklch(0.75 0.2 145 / 8%);
+}
+
+.nav-icon {
+  font-size: 1rem;
+}
+
+.logout-btn {
+  all: unset;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  color: oklch(0.65 0 0);
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.logout-btn:hover {
+  color: oklch(0.65 0.2 25);
+  background: oklch(0.65 0.2 25 / 8%);
+}
+
+main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem;
+}
 
 @media (max-width: 600px) {
-  header { align-items: flex-start; flex-direction: column; }
+  header {
+    padding: 0 1rem;
+    gap: 1rem;
+  }
+  nav { gap: 0.15rem; }
+  .nav-link span { display: none; }
+  .nav-link { padding: 0.5rem; }
+  .logout-btn span { display: none; }
+  .logout-btn { padding: 0.5rem; }
   main { padding: 1.5rem 1rem; }
 }

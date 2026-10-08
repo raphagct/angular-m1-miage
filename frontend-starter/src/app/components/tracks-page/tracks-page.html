@@ -8,8 +8,8 @@
   <div class="grid">
     <article class="card">
       <h2>Importer</h2>
-      <label>Titre<input [formControl]="title" /></label>
-      <label>Fichier audio<input type="file" accept="audio/*" (change)="choose($event)" /></label>
+      <label>Titre<input [formControl]="title" [disabled]="uploading()" /></label>
+      <label>Fichier audio<input type="file" accept="audio/*" (change)="choose($event)" [disabled]="uploading()" /></label>
       
       @if (uploadError()) {
         <p class="error">{{ uploadError() }}</p>
@@ -38,6 +38,18 @@
       @if (error()) {
         <p class="error" style="color: red;">{{ error() }}</p>
       }
+
+      @if (ghostFile()) {
+        <div class="track card-track" style="opacity: 0.6; border: 1px dashed #ccc;">
+          <div class="track-info">
+            <b>{{ title.value || ghostFile()?.name }}</b>
+            <small>{{ ghostFile()?.name }}</small>
+            <small class="meta">Envoi en cours... ({{ uploadProgress() }}%)</small>
+            <progress [value]="uploadProgress()" max="100" style="width: 100%; margin-top: 4px;"></progress>
+          </div>
+        </div>
+      }
+
       @for (track of tracks(); track track.id) {
         <div class="track card-track">
           <div class="track-info">
@@ -47,7 +59,13 @@
           </div>
           <div style="display: flex; gap: 8px;">
             <button type="button" (click)="play(track)" [attr.aria-label]="'Lire ' + track.title">▶</button>
-            <button type="button" (click)="delete(track)" [attr.aria-label]="'Supprimer ' + track.title" style="background-color: #d32f2f; color: white;">🗑</button>
+            <button type="button" (click)="delete(track)" [disabled]="deleting().has(track.id)" [attr.aria-label]="'Supprimer ' + track.title" style="background-color: #d32f2f; color: white;">
+              @if (deleting().has(track.id)) {
+                ...
+              } @else {
+                🗑
+              }
+            </button>
           </div>
         </div>
       } @empty {
